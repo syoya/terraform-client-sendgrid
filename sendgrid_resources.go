@@ -15,13 +15,13 @@ type Template struct {
 
 // Sendgrid  Template Version
 type TemplateVersion struct {
-	Template     Template `json:"template,omitempty"`
-	Id           string   `json:"id,omitempty"`
-	Name         string   `json:"name,omitempty"`
-	HtmlContent  string   `json:"html_content,omitempty"`
-	PlainContent string   `json:"plain_content,omitempty"`
-	Subject      string   `json:"subject,omitempty"`
-	Active       bool     `json:"active,omitempty"`
+	Id           string `json:"id,omitempty"`
+	TemplateId   string `json:"template_id,omitempty"`
+	Name         string `json:"name,omitempty"`
+	Subject      string `json:"subject,omitempty"`
+	HtmlContent  string `json:"html_content,omitempty"`
+	PlainContent string `json:"plain_content,omitempty"`
+	Active       int    `json:"active,omitempty"`
 }
 
 ///////////////////////////////////////////////////
@@ -126,7 +126,7 @@ func (client *Client) DeleteTemplate(id string) error {
 // POST /templates/{template_id}/versions
 
 func (client *Client) CreateTemplateVersion(version *TemplateVersion) (*TemplateVersion, error) {
-	request := sendgrid.GetRequest(client.apiKey, fmt.Sprintf("/v3/templates/%s/versions", version.Template.Id), "")
+	request := sendgrid.GetRequest(client.apiKey, fmt.Sprintf("/v3/templates/%s/versions", version.TemplateId), "")
 	request.Method = "POST"
 	var err error
 	request.Body, err = client.GetBody(version)
@@ -147,8 +147,8 @@ func (client *Client) CreateTemplateVersion(version *TemplateVersion) (*Template
 // Update a transactional template version.
 // PATCH /templates/{template_id}/versions/{version_id}
 
-func (client *Client) UpdateTemplateVersion(version *TemplateVersion) error {
-	request := sendgrid.GetRequest(client.apiKey, fmt.Sprintf("/v3/templates/%s/versions/%s", version.Template.Id, version.Id), "")
+func (client *Client) UpdateTemplateVersion(id string, version *TemplateVersion) error {
+	request := sendgrid.GetRequest(client.apiKey, fmt.Sprintf("/v3/templates/%s/versions/%s", version.TemplateId, id), "")
 	request.Method = "PATCH"
 	var err error
 	request.Body, err = client.GetBody(version)
@@ -169,7 +169,7 @@ func (client *Client) UpdateTemplateVersion(version *TemplateVersion) error {
 // Get a specific transactional template version.
 // GET /templates/{template_id}/versions/{version_id}
 
-func (client *Client) GetSpecificTemplateVersion(templateId, versionId string) (*TemplateVersion, error) {
+func (client *Client) GetTemplateVersion(templateId, versionId string) (*TemplateVersion, error) {
 	request := sendgrid.GetRequest(client.apiKey, fmt.Sprintf("/v3/templates/%s/versions/%s", templateId, versionId), "")
 	request.Method = "GET"
 	response, err := sendgrid.API(request)
@@ -185,15 +185,15 @@ func (client *Client) GetSpecificTemplateVersion(templateId, versionId string) (
 // Delete a transactional template version.
 // DELETE /templates/{template_id}/versions/{version_id}
 
-func (client *Client) DeleteTemplateVersion(templateId, versionId string) (*TemplateVersion, error) {
+func (client *Client) DeleteTemplateVersion(templateId, versionId string) error {
 	request := sendgrid.GetRequest(client.apiKey, fmt.Sprintf("/v3/templates/%s/versions/%s", templateId, versionId), "")
 	request.Method = "DELETE"
 	response, err := sendgrid.API(request)
 	if err != nil {
 		fmt.Println(err)
-		return nil, err
+		return err
 	} else {
-		return processTemplateVersionResponse(response)
+		return processEmptyResponse(response)
 	}
 }
 
@@ -222,7 +222,8 @@ func processTemplateResponse(response *rest.Response) (*Template, error) {
 	var out Template
 	err = json.Unmarshal([]byte(response.Body), &out)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println(response)
+		fmt.Println("Unmarshal Template error: ", err)
 		return nil, err
 	}
 	return &out, nil
@@ -237,7 +238,7 @@ func processTemplateVersionResponse(response *rest.Response) (*TemplateVersion, 
 	var out TemplateVersion
 	err = json.Unmarshal([]byte(response.Body), &out)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Unmarshal TemplateVersion error: ", err)
 		return nil, err
 	}
 	return &out, nil
