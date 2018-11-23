@@ -11,6 +11,7 @@ import (
 type Template struct {
 	Id   string `json:"id,omitempty"`
 	Name string `json:"name,omitempty"`
+	Generation string `json:"generation,omitempty"`
 }
 
 // Sendgrid  Template Version
